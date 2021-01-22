@@ -5,7 +5,7 @@ import cv2
 from moviepy.editor import VideoClip
 
 #params:
-random.seed(0)
+reproductive=True
 amplitudes=[1/8, 1/2, 2] #amplitude of movements of the non magnified video, in pixels 
 target_mag=16 #amplitude of the resulting magnified video
 num_frames=90 #number of frames to generate
@@ -15,7 +15,7 @@ freqx=1.3 #frequence of the movement in the x axis
 freqy=1.5 #frequence of the movement in the x axis
 freqdistort=1 #frequence of the distortion movent
 down=4 #downsize of the final video compared to original 
-toCrop=True
+toCrop=False
 
 
 def testImg(im):
@@ -103,7 +103,9 @@ for i in range(len(am_files)):
     print('video:',magname)
     if os.path.isfile(magname) and os.path.isfile(nomagname):
         continue
-
+        print('already exists, skipping')
+    if reproductive:
+        random.seed(i)
     v.start_video(num_frames,
                   move[0],move[1],freqx,freqy,
                   distort[0],distort[1],freqdistort,
