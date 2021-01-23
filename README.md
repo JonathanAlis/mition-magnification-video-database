@@ -1,4 +1,4 @@
-#Motion Magnification database
+# Motion Magnification database
 
 
 This repo contains python programs that generate video with motion magnification. 
@@ -15,7 +15,7 @@ The foreground images were obtained from the alpha-mate dataset: http://www.alph
 From this dataset, we obtain 27 full images image and the alpha-mate mask that represent the pixels and how the semi transparent pixels blend with the background.
 
 The transformations are applyed to the full image and also to the alpha-mate mask.
-This addresses the quantization problem of sub-pixel transformations. The subpixel movement in the borders is viewed as a semi transparent intensity $$\alpha$$.
+This addresses the quantization problem of sub-pixel transformations. The subpixel movement in the borders is viewed as a semi transparent intensity.
 
 The full images are stored in the folder /input_training_highres and the alpha-mate images are stored at /gt_training_highres. The images present pixel width between 2080 and 3694; and pixels height between 1978 and 2600.
 ##### Background
@@ -23,11 +23,11 @@ The background images are from public domain and were taken from the pxhere.com 
 The images are high resolution landscape images with different proportions, presenting pixel width between 2199 and 9000; and pixels height between 1468 and 5304, and are stored in the folder /backgrounds
 
 ##### Foreground-background merge
-The color of a pixel $$x$$ is given by:
-$$c(x)=fg(x)*\alpha(x)+bg(x)*(1-\alpha(x))$$,
-where $$fg(x)$$ if the foreground color at pixel x;
-$$bg(x)$$ if the background color at pixel x;
-and $$\alpha(x)$$ is the alha-mate semi transparency intensity (between 0 and 1) at pixel x.
+The color of a pixel x is given by:
+<img src="https://render.githubusercontent.com/render/math?math=c(x)=fg(x)*\alpha(x)+bg(x)*(1-\alpha(x))">,
+where fg(x) if the foreground color at pixel x;
+bg(x) is the background color at pixel x;
+and <img src="https://render.githubusercontent.com/render/math?math=alpha(x)"> is the alha-mate semi transparency intensity (between 0 and 1) at pixel x.
 Therefore, the foreground and background are blended toguether accordingly to the alpha-mate mask.
 
 As the foreground and background image sizes may not match, the select as the output image as the foreground and resize and crop the background in order to fit.
