@@ -78,9 +78,9 @@ The video parameters, as in the beggining of the file movieOnly.py, are:
 * freqdistort=1: Frequence of the distortion movement
 * down=4: downsample from the original size.
 
+Warning: It can take very long to compute. The distortion is not optimized, and the original image sized are too big.
 ##### TODO
 The next step is to create another dataset for evaluating motion magnification in presence of large motion.
-$$color(x)=f(x)*alpha(x)+bg(x)*(1-alpha(x))$$
 
 
 
