@@ -41,8 +41,8 @@ def to_0255(im):
 
 from os import listdir, makedirs
 from os.path import isfile, join, exists
-if not exists('resultVideos/moveNdistort/'):
-    makedirs('resultVideos/moveNdistort/')
+if not exists('resultVideos/moveNdistortLarge/'):
+    makedirs('resultVideos/moveNdistortLarge/')
 
 alphamates_dir='./gt_training_highres'
 im_dir='./input_training_highres'
@@ -59,8 +59,8 @@ combinations=[[0,0,0],[1,0,0],[2,0,0],[0,1,0],[1,1,0],[2,1,0],[0,2,0],[1,2,0],[2
               [0,0,1],[1,0,1],[2,0,1],[0,1,1],[1,1,1],[2,1,1],[0,2,1],[1,2,1],[2,2,1],
               [0,0,2],[1,0,2],[2,0,2],[0,1,2],[1,1,2],[2,1,2],[0,2,2],[1,2,2],[2,2,2]]
 for i in range(len(am_files)):
-    magname='resultVideos/moveNdistort/mag'+str(i)+'_'
-    nomagname='resultVideos/moveNdistort/orig'+str(i)+'_'
+    magname='resultVideos/moveNdistortLarge/mag'+str(i)+'_'
+    nomagname='resultVideos/moveNdistortLarge/orig'+str(i)+'_'
     if combinations[i][0]==0:
         v=magv.GenerateMagVideo(im_files[i],am_files[i],bg_color=(random.random(),random.random(),random.random()))
         magname+='plainbg_'
@@ -98,8 +98,8 @@ for i in range(len(am_files)):
     magname+='amp'+str(amplitude)+'_'    
     magname+='alpha'+str(int(alpha))
     #distort=[0,0]#comentar depois
-    magname+='.mp4'
-    nomagname+='.mp4'
+    magname+='_Large.mp4'
+    nomagname+='_Large.mp4'
     
     import os
     print('video:',magname)
@@ -111,7 +111,7 @@ for i in range(len(am_files)):
     v.start_video(num_frames,
                   move[0],move[1],freqx,freqy,
                   distort[0],distort[1],freqdistort,
-                  alpha=alpha,fps=fps,pixel_mag=target_mag,downscale=down,addLarge=False,
+                  alpha=alpha,fps=fps,pixel_mag=target_mag,downscale=down,addLarge=True,
                   magname=magname,nomagname=nomagname,toCrop=toCrop)    
     
     def get_frame(v,t,magf=True,view=True):

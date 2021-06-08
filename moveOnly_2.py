@@ -38,9 +38,9 @@ def main(#params:
     freqdistort=1, #frequence of the distortion movent
     toCrop=True,
     maghalf=True):
-    dir_name='moveOnly_downsize_'+str(down)
+    dir_name='moveOnly2_downsize_'+str(down)
     target_mag=64/down #amplitude of the resulting magnified video in pixels
-    amplitudes=[target_mag/80, target_mag/20, target_mag/5] #amplitude of movements of nonmag
+    amplitudes=[target_mag/160, target_mag/80, target_mag/40] #amplitude of movements of nonmag
 
     
     if not exists('resultVideos/'+dir_name+'/'):

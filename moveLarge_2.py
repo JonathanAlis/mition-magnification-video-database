@@ -6,15 +6,16 @@ from moviepy.editor import VideoClip
 
 #params:
 reproductive=True
-amplitudes=[1/8, 1/2, 2] #amplitude of movements of the non magnified video, in pixels 
-target_mag=16 #amplitude of the resulting magnified video
+down=4 #downsize of the final video compared to original change at our will
+dir_name='moveHalfLarge_downsize_'+str(down)
+target_mag=64/down #amplitude of the resulting magnified video in pixels
+amplitudes=[target_mag/16, target_mag/8, target_mag/4] #amplitude of movements of nonmag
 num_frames=90 #number of frames to generate
 fps=30 #number of frames per second
 video_dur=3 #second duration of the video
-freqx=1.3 #frequence of the movement in the x axis
-freqy=1.5 #frequence of the movement in the x axis
+freqx_range=[1.5,2.5] #frequence of the movement in the x axis
+freqy_range=[1.5, 2.5] #frequence of the movement in the 7 axis
 freqdistort=1 #frequence of the distortion movent
-down=4 #downsize of the final video compared to original 
 toCrop=False
 
 
@@ -41,8 +42,8 @@ def to_0255(im):
 
 from os import listdir, makedirs
 from os.path import isfile, join, exists
-if not exists('resultVideos/moveNdistort/'):
-    makedirs('resultVideos/moveNdistort/')
+if not exists('resultVideos/'+dir_name+'/'):
+    makedirs('resultVideos/'+dir_name+'/')
 
 alphamates_dir='./gt_training_highres'
 im_dir='./input_training_highres'
@@ -59,36 +60,39 @@ combinations=[[0,0,0],[1,0,0],[2,0,0],[0,1,0],[1,1,0],[2,1,0],[0,2,0],[1,2,0],[2
               [0,0,1],[1,0,1],[2,0,1],[0,1,1],[1,1,1],[2,1,1],[0,2,1],[1,2,1],[2,2,1],
               [0,0,2],[1,0,2],[2,0,2],[0,1,2],[1,1,2],[2,1,2],[0,2,2],[1,2,2],[2,2,2]]
 for i in range(len(am_files)):
-    magname='resultVideos/moveNdistort/mag'+str(i)+'_'
-    nomagname='resultVideos/moveNdistort/orig'+str(i)+'_'
+    magname='resultVideos/'+dir_name+'/mag'+str(i)+'_'
+    nomagname='resultVideos/'+dir_name+'/orig'+str(i)+'_'
     if combinations[i][0]==0:
         v=magv.GenerateMagVideo(im_files[i],am_files[i],bg_color=(random.random(),random.random(),random.random()))
         magname+='plainbg_'
         nomagname+='plainbg_'        
-    else:
+    elif combinations[i][0]==1:
         random.shuffle(bg_files)
         v=magv.GenerateMagVideo(im_files[i],am_files[i],bg_files.pop())
         magname+='texturebg_'
         nomagname+='texturebg_'
+    else:
+        random.shuffle(bg_files)
+        v=magv.GenerateMagVideo(im_files[i],am_files[i],bg_files.pop(),BGoffsetX=10)
+        magname+='texturemovebg_'
+        nomagname+='texturemovebg_'
     #v.downsize(20,20)
 
     move=[0,0]    
-    distort=[1,1]
-    if random.uniform(0, 1)>0.5:
-        move[0]=1
-    else:
-        move[1]=1
+    distort=[0,0]
     if combinations[i][2]==2:
-        magname+='moveNdistort_'
-        nomagname+='moveNdistort_'
+        magname+='moveXY_'
+        nomagname+='moveXY_'
+        move[0]=1
+        move[1]=1
     if combinations[i][2]==1:
-        move=[0,0]
-        magname+='distort_'
-        nomagname+='distort_'
+        move[0]=1
+        magname+='moveX_'
+        nomagname+='moveX_'
     if combinations[i][2]==0:
-        distort=[0,0]
-        magname+='move_'
-        nomagname+='move_'
+        move[1]=1
+        magname+='moveY_'
+        nomagname+='moveY_'
 
 
     amplitude=amplitudes[combinations[i][1]]  #2**(2*combinations[i][1]-3)#(2**[-3,-1,1])
@@ -98,20 +102,21 @@ for i in range(len(am_files)):
     magname+='amp'+str(amplitude)+'_'    
     magname+='alpha'+str(int(alpha))
     #distort=[0,0]#comentar depois
-    magname+='.mp4'
-    nomagname+='.mp4'
+    magname+='_Large.mp4'
+    nomagname+='_Large.mp4'
     
     import os
     print('video:',magname)
     if os.path.isfile(magname) and os.path.isfile(nomagname):
-        continue
         print('already exists, skipping')
+        continue
     if reproductive:
         random.seed(i)
     v.start_video(num_frames,
-                  move[0],move[1],freqx,freqy,
+                  move[0],move[1],
+                  random.uniform(freqx_range[0],freqx_range[1]),random.uniform(freqy_range[0],freqy_range[1]),
                   distort[0],distort[1],freqdistort,
-                  alpha=alpha,fps=fps,pixel_mag=target_mag,downscale=down,addLarge=False,
+                  alpha=alpha,fps=fps,pixel_mag=target_mag,downscale=down,addLarge=True,moveBG=combinations[i][0]==2,
                   magname=magname,nomagname=nomagname,toCrop=toCrop)    
     
     def get_frame(v,t,magf=True,view=True):

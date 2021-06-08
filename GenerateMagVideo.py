@@ -26,7 +26,7 @@ def optimize_display(img_list):
 
 
 class GenerateMagVideo:
-    def __init__(self,im_name,am_name,bg_name='',bg_color=(0.0,1.0,0.0)):
+    def __init__(self,im_name,am_name,bg_name='',bg_color=(0.0,1.0,0.0),BGoffsetX=0):
         try:
             self.im=cv2.imread(im_name)*1.0/255
         except:
@@ -45,26 +45,28 @@ class GenerateMagVideo:
             self.fullbg[:,:,:]=bg_color
         else:
             self.fullbg=cv2.imread(bg_name)*1.0/255
-        self.bg_crop()
+        self.bg_crop(BGoffsetX)
 
-    def bg_crop(self):
-        bgsize=self.fullbg.shape[:2]
-        xr=self.shp[0]/bgsize[0]
-        yr=self.shp[1]/bgsize[1]
-        
-        if xr>1 or yr>1:
-            #linha pelo maior
-
-            self.fullbg=cv2.resize(self.fullbg,(int(max(xr,yr)*bgsize[1]),int(max(xr,yr)*bgsize[0])))    
+    def bg_crop(self,Xoffset_pct):
+        if Xoffset_pct==0:
+            dshp=self.shp
         else:
-            self.fullbg=cv2.resize(self.fullbg,(int(max(xr,yr)*bgsize[1]),int(max(xr,yr)*bgsize[0])))
+            Xoffset=int(self.shp[1]*Xoffset_pct/100)
+            dshp=(self.shp[0],self.shp[1]+Xoffset)
+                    
+        bgsize=self.fullbg.shape[:2]
+        xr=dshp[0]/bgsize[0]
+        yr=dshp[1]/bgsize[1]
+        self.fullbg=cv2.resize(self.fullbg,(int(max(xr,yr)*self.fullbg.shape[1]),int(max(xr,yr)*self.fullbg.shape[0])))
         bgsz=self.fullbg.shape[:2]
-        diff=(bgsz[0]-self.shp[0],bgsz[1]-self.shp[1])
+        diff=(bgsz[0]-dshp[0],bgsz[1]-dshp[1])
         self.fullbg=self.fullbg[diff[0]//2:bgsz[0]-diff[0]//2,diff[1]//2:bgsz[1]-diff[1]//2]
-        self.fullbg=self.fullbg[:self.shp[0],:self.shp[1]]
-                
+        self.fullbg=self.fullbg[:dshp[0],:dshp[1]]
+        if Xoffset_pct>0:
+            print(self.shp)
+            print(self.fullbg.shape)
+      
         
-
     def downsize(self,factor, multiple_of=4):
         self.am=cv2.resize(self.am,(self.shp[1]//factor,self.shp[0]//factor))#depois comenta isso
         self.im=cv2.resize(self.im,(self.shp[1]//factor,self.shp[0]//factor))
@@ -75,7 +77,7 @@ class GenerateMagVideo:
         #self.im=self.im[0:self.shp[0],0:self.shp[1],:]
         #self.fullbg=self.fullbg[0:self.shp[0],0:self.shp[1],:]
         
-    def start_video(self,num_frames,movex,movey,fmx,fmy,distx,disty,fd,alpha=10,fps=30,pixel_mag=30,downscale=1,magname='large.mp4',nomagname='short.mp4',toCrop=True):
+    def start_video(self,num_frames,movex,movey,fmx,fmy,distx,disty,fd,alpha=10,fps=30,pixel_mag=30,downscale=1,addLarge=False,moveBG=False,magname='large.mp4',nomagname='short.mp4',toCrop=True):
         self.target_mag=pixel_mag*downscale
         self.alpha=alpha
         self.movex=movex*self.target_mag/self.alpha
@@ -97,6 +99,16 @@ class GenerateMagVideo:
         self.magname=magname
         self.nomagname=nomagname
         self.toCrop=toCrop
+        
+        self.moveBG=moveBG
+        self.moveBG_dir=1 if random.random() < 0.5 else -1
+        self.addLarge=addLarge
+        if self.addLarge==2:
+            print('set to add large motion, with full motion')
+            self.start_large_motion(True)
+        if self.addLarge or self.addLarge==1:
+            print('set to add large motion')
+            self.start_large_motion(False)
         
         self.vidsize=self.shp
         self.static_map()
@@ -142,6 +154,40 @@ class GenerateMagVideo:
         
         return (vecs_x,vecs_y)
 
+    def start_large_motion(self,full=True):
+        if full:
+            pos=[(0,0),(0,self.shp[1]),(self.shp[0],self.shp[1]),(self.shp[0],0)]
+        else:
+            pos=[(int(2/5*self.shp[0]),int(3/5*self.shp[1])),
+                (int(3/5*self.shp[0]),int(2/5*self.shp[1])),
+                (int(2/5*self.shp[0]),int(2/5*self.shp[1])),
+                (int(3/5*self.shp[0]),int(3/5*self.shp[1]))]
+            oposed_pos=[(int(3/5*self.shp[0]),int(2/5*self.shp[1])),
+                        (int(2/5*self.shp[0]),int(3/5*self.shp[1])),
+                        (int(3/5*self.shp[0]),int(3/5*self.shp[1])),
+                        (int(2/5*self.shp[0]),int(2/5*self.shp[1]))]
+        idx=random.randint(0, 3)
+        self.startpos=pos[idx]
+        self.finishpos=oposed_pos[idx]
+        #
+
+
+    def large_moving_maps(self,frame_num):
+        if self.addLarge:  
+            posx=self.startpos[0]+frame_num/self.num_frames*(self.finishpos[0]-self.startpos[0])-self.center[0]
+            posy=self.startpos[1]+frame_num/self.num_frames*(self.finishpos[1]-self.startpos[1])-self.center[1]
+            vecs_x=np.ones(self.shp,np.float32)*posx
+            vecs_y=np.ones(self.shp,np.float32)*posy
+            
+        else:
+            vecs_x=np.zeros(self.shp,np.float32)
+            vecs_y=np.zeros(self.shp,np.float32)
+        
+        return (vecs_x,vecs_y)
+        
+
+
+
     def center(self):
         mmts= cv2.moments(cv2.cvtColor(self.am.astype(np.float32), cv2.COLOR_BGR2GRAY))
         self.center=(mmts['m10']/mmts['m00'],mmts['m01']/mmts['m00'])
@@ -162,22 +208,45 @@ class GenerateMagVideo:
         #print(vecs_x)
         return (vecs_x,vecs_y)
     
+    
 
-    def remap_n_alphamate(self,vecsx,vecsy):
+    def remap_n_alphamate(self,vecsx,vecsy,moveBG=False,framenum=0):
         #print(self.map_x)
         
         amr=cv2.remap( self.am, self.map_x+vecsx,self.map_y+vecsy, cv2.INTER_CUBIC) #alpha mate remaped
         imr=cv2.remap( self.im, self.map_x+vecsx,self.map_y+vecsy, cv2.INTER_CUBIC) #image remaped       
         amimr=cv2.multiply(amr,imr) #alpha mate image remaped
-        newbg=self.fullbg*(1-amr) #background without the image
+        #print(self.fullbg.shape,imr.shape,moveBG,framenum)
+        if self.fullbg.shape==imr.shape:                
+            newbg=self.fullbg*(1-amr) #background without the image
+        else:    
+            if not moveBG:
+                x_=imr.shape[0]
+                offset=int((self.fullbg.shape[1]-x_)/2)
+                newbg=self.fullbg[:,offset:offset+x_,:]
+            else:
+                if self.moveBG_dir==1:
+                    t=framenum/self.num_frames
+                else:
+                    t=(self.num_frames-framenum-1)/self.num_frames
+                x_=imr.shape[1]
+                maxoffset=int((self.fullbg.shape[1]-x_))
+                offset=int(t*maxoffset)
+                newbg=self.fullbg[:,offset:offset+x_,:]
+            newbg=newbg*(1-amr)
         frame=amimr+newbg        
         return frame
+
 
     def mframe_at_t(self,t,view=False):
         frame_num=t*self.fps
         mx,my=self.moving_maps(frame_num,self.movex*self.alpha,self.movey*self.alpha)        
         dx,dy=self.distorting_maps(frame_num,self.distx*self.alpha,self.disty*self.alpha)
-        mframe=self.remap_n_alphamate(dx+mx,my+dy)
+        if self.addLarge:
+            lx,ly=self.large_moving_maps(frame_num)
+            mframe=self.remap_n_alphamate(dx+mx+lx,my+dy+ly,moveBG=self.moveBG,framenum=frame_num)
+        else:
+            mframe=self.remap_n_alphamate(dx+mx,my+dy,moveBG=self.moveBG,framenum=frame_num)
         #mframe=mframe[self.xrange[0]:self.xrange[1],self.yrange[0]:self.yrange[1],:] 
         #mframe=self.crop_and_down(self,mframe)
         if view:
@@ -195,7 +264,11 @@ class GenerateMagVideo:
         frame_num=t*self.fps
         mx,my=self.moving_maps(frame_num,self.movex,self.movey)        
         dx,dy=self.distorting_maps(frame_num,self.distx,self.disty)
-        frame=self.remap_n_alphamate(mx+dx,my+dy)
+        if self.addLarge:
+            lx,ly=self.large_moving_maps(frame_num)
+            frame=self.remap_n_alphamate(dx+mx+lx,my+dy+ly,moveBG=self.moveBG,framenum=frame_num)
+        else:
+            frame=self.remap_n_alphamate(dx+mx,my+dy,moveBG=self.moveBG,framenum=frame_num)
         #frame=self.crop_and_down(self,frame)
         if view:
             withrect=frame.copy()
@@ -211,8 +284,11 @@ class GenerateMagVideo:
     def crop_and_down(self,frame,nods=False):
         if self.toCrop:
             frame=frame[self.yrange[0]:self.yrange[1],self.xrange[0]:self.xrange[1],:]
-        frame=cv2.resize(frame,(frame.shape[1]//self.downscale,frame.shape[0]//self.downscale))
-
+        h,w=frame.shape[1]//self.downscale, frame.shape[0]//self.downscale
+        h = h//4 *4
+        w = w//4 *4
+        frame=cv2.resize(frame,(h,w))
+        
         #if not nods:
         #    print(frame.shape)
         #    frame=cv2.resize(frame,(frame.shape[1]//self.downscale,frame.shape[0]//self.downscale))
